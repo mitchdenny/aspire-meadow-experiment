@@ -1,0 +1,30 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.8.0.0
+MinimumVisualStudioVersion = 17.8.0.0
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AspireMeadowExperiment.AppHost", "AspireMeadowExperiment.AppHost\AspireMeadowExperiment.AppHost.csproj", "{0CF8F8CF-46D5-4AD6-86F1-E46D9CC8D46A}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AspireMeadowExperiment.ServiceDefaults", "AspireMeadowExperiment.ServiceDefaults\AspireMeadowExperiment.ServiceDefaults.csproj", "{83BEE425-8206-4ACF-8FD8-DD4599B32694}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0CF8F8CF-46D5-4AD6-86F1-E46D9CC8D46A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0CF8F8CF-46D5-4AD6-86F1-E46D9CC8D46A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0CF8F8CF-46D5-4AD6-86F1-E46D9CC8D46A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0CF8F8CF-46D5-4AD6-86F1-E46D9CC8D46A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{83BEE425-8206-4ACF-8FD8-DD4599B32694}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{83BEE425-8206-4ACF-8FD8-DD4599B32694}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{83BEE425-8206-4ACF-8FD8-DD4599B32694}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{83BEE425-8206-4ACF-8FD8-DD4599B32694}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {A58DA0F6-565E-4C9C-99EA-08F7956A8674}
+	EndGlobalSection
+EndGlobal
