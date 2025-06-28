@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "isRoot": true,
+  "tools": {
+    "wildernesslabs.meadow.cli": {
+      "version": "2.2.0.2",
+      "commands": [
+        "meadow"
+      ],
+      "rollForward": false
+    }
+  }
+}
