@@ -14,4 +14,9 @@
     <PackageReference Include="Aspire.Hosting.AppHost" Version="9.4.0-preview.1.25326.12" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\WildernessLabs.Meadow.Hosting\WildernessLabs.Meadow.Hosting.csproj" IsAspireProjectResource="false" />
+    <ProjectReference Include="..\AspireMeadowExperiment.TiltSensor\AspireMeadowExperiment.TiltSensor.csproj" />
+  </ItemGroup>
+
 </Project>
