@@ -32,10 +32,11 @@ public static class MeadowExtensions
         var meadowCliLogout = builder.AddExecutable("meadow-cli-logout", "dotnet", ".", ["tool", "run", "meadow", "logout"])
             .WithExplicitStart();
 
-        var project = builder.AddProject<TProject>(name)
-            .WithCommand("deploy-firmware-to-cloud", "Deploy to Cloud",
+        var project = builder.AddProject<TProject>(name);
+        project.WithCommand("deploy-firmware-to-cloud", "Deploy to Cloud",
             (context) => DeployFirmwareToCloudAsync(
                 context,
+                project.Resource,
                 meadowCliCheck.Resource,
                 meadowCliInstall.Resource,
                 meadowCliLoginCheck.Resource,
@@ -55,164 +56,150 @@ public static class MeadowExtensions
 
     private static async Task<ExecuteCommandResult> DeployFirmwareToCloudAsync(
         ExecuteCommandContext context,
+        ProjectResource projectResource,
         ExecutableResource meadowCliCheckResource,
         ExecutableResource meadowCliInstallResource,
         ExecutableResource meadlowCliLoginCheckResource,
         ExecutableResource meadowCliLoginResource)
     {
-        try
+        var rls = context.ServiceProvider.GetRequiredService<ResourceLoggerService>();
+        var logger = rls.GetLogger(projectResource);
+        var interactionService = context.ServiceProvider.GetRequiredService<IInteractionService>();
+        var notificationService = context.ServiceProvider.GetRequiredService<ResourceNotificationService>();
+        var commandService = context.ServiceProvider.GetRequiredService<ResourceCommandService>();
+
+        logger.LogInformation("Checking that Meadow CLI is installed.", projectResource.Name);
+
+        // Check if the Meadow CLI is installed by running the "meadow-cli-check" resource.
+        var checkMeadowCliResult = await RunExecutableResourceInteractivelyAsync(
+            "Meadow CLI",
+            "Checking if the Meadow CLI is installed...",
+            meadowCliCheckResource,
+            commandService,
+            interactionService,
+            notificationService,
+            TimeSpan.FromSeconds(60),
+            context.CancellationToken
+        );
+
+        bool meadowCliInstalled = false;
+
+        if (checkMeadowCliResult.Outcome == RunExecutableResourceOutcome.ResourceStartFailed)
         {
-            var rls = context.ServiceProvider.GetRequiredService<ResourceLoggerService>();
-            var interactionService = context.ServiceProvider.GetRequiredService<IInteractionService>();
-            var notificationService = context.ServiceProvider.GetRequiredService<ResourceNotificationService>();
-            var commandService = context.ServiceProvider.GetRequiredService<ResourceCommandService>();
-
-            // First start the CLI check to see if the Meadow CLI is installed.
-            var meadowCliCheckResourceStartResult = await commandService.ExecuteCommandAsync(
-                meadowCliCheckResource,
-                "resource-start",
-                context.CancellationToken
-                );
-
-            // The command to start the Meadow CLI check resource could fail - if that is the case
-            // then something is seriously broken so we just pipe the error message back to the user.
-            if (!meadowCliCheckResourceStartResult.Success)
-            {
-                return meadowCliCheckResourceStartResult;
-            }
-
-            // Wait for the Meadow CLI check to finish.
-            var meadowCliCheckResourceState = await notificationService.WaitForResourceAsync(
-                meadowCliCheckResource.Name,
-                (@event) => @event.Snapshot.State == KnownResourceStates.Finished,
-                context.CancellationToken);
-
-            if (meadowCliCheckResourceState.Snapshot.State == KnownResourceStates.Finished && meadowCliCheckResourceState.Snapshot.ExitCode != 0)
-            {
-                var installConfirmation = await interactionService.PromptConfirmationAsync(
-                    title: "Install Meadow CLI",
-                    message: "The Meadow CLI is not installed. Do you want to install it now?",
-                    new()
-                    {
-                        PrimaryButtonText = "Install",
-                        SecondaryButtonText = "Cancel",
-                        Intent = MessageIntent.Confirmation
-                    },
-                    context.CancellationToken
-                    );
-
-                if (installConfirmation.Canceled)
-                {
-                    return new ExecuteCommandResult
-                    {
-                        Success = false,
-                        ErrorMessage = "User canceled the installation of the Meadow CLI."
-                    };
-                }
-
-                var meadowCliInstallResourceStartResult = await commandService.ExecuteCommandAsync(
-                    meadowCliInstallResource,
-                    "resource-start",
-                    context.CancellationToken
-                    );
-
-                if (!meadowCliInstallResourceStartResult.Success)
-                {
-                    return meadowCliInstallResourceStartResult;
-                }
-
-                var meadowCliInstallResourceState = await notificationService.WaitForResourceAsync(
-                    meadowCliInstallResource.Name,
-                    (@event) => @event.Snapshot.State == KnownResourceStates.Finished,
-                    context.CancellationToken);
-
-                if (meadowCliInstallResourceState.Snapshot.ExitCode != 0)
-                {
-                    return new ExecuteCommandResult
-                    {
-                        Success = false,
-                        ErrorMessage = "Failed to install the Meadow CLI. Please check the logs for more details."
-                    };
-                }
-            }
-
-            var meadowCliLoginCheckResult = await commandService.ExecuteCommandAsync(
-                meadlowCliLoginCheckResource,
-                "resource-start",
-                context.CancellationToken
-                );
-
-            if (!meadowCliLoginCheckResult.Success)
-            {
-                return meadowCliLoginCheckResult;
-            }
-
-            var meadowCliLoginCheckResourceState = await notificationService.WaitForResourceAsync(
-                meadlowCliLoginCheckResource.Name,
-                (@event) => @event.Snapshot.State == KnownResourceStates.Finished,
-                context.CancellationToken);
-
-            if (meadowCliLoginCheckResourceState.Snapshot.ExitCode != 0)
-            {
-                var loginConfirmation = await interactionService.PromptConfirmationAsync(
-                    title: "Login to Meadow Cloud",
-                    message: "You must be logged in to deploy firmware to the cloud. Do you want to log in now?",
-                    new()
-                    {
-                        PrimaryButtonText = "Login",
-                        SecondaryButtonText = "Cancel",
-                        Intent = MessageIntent.Confirmation
-                    },
-                    context.CancellationToken
-                    );
-
-                if (loginConfirmation.Canceled)
-                {
-                    return new ExecuteCommandResult
-                    {
-                        Success = false,
-                        ErrorMessage = "User canceled the login operation."
-                    };
-                }
-            }
-
-            var meadowCliLogin = await commandService.ExecuteCommandAsync(
-                meadowCliLoginResource,
-                "resource-start",
-                context.CancellationToken);
-
-            if (!meadowCliLogin.Success)
-            {
-                return meadowCliLogin;
-            }
-
-            var meadowCliLoginResourceState = await notificationService.WaitForResourceAsync(
-                meadowCliLoginResource.Name,
-                (@event) => @event.Snapshot.State == KnownResourceStates.Finished,
-                context.CancellationToken);
-
-            if (meadowCliLoginResourceState.Snapshot.ExitCode != 0)
-            {
-                return new ExecuteCommandResult
-                {
-                    Success = false,
-                    ErrorMessage = "Failed to install the Meadow CLI. Please check the logs for more details."
-                };
-            }
-
-            return new ExecuteCommandResult
-                {
-                    Success = true,
-                };
+            logger.LogError("Failed to start Meadow CLI check resource.");
+            return checkMeadowCliResult.CommandResult!;
         }
-        catch (Exception ex)
+        else if (checkMeadowCliResult.Outcome == RunExecutableResourceOutcome.ResourceFinished && checkMeadowCliResult.ExitCode == 0)
         {
-            
+            logger.LogInformation("Meadow CLI is installed.");
+            meadowCliInstalled = true;
+        }
+        else
+        {
+            logger.LogError("Meadow CLI install check failed or timed out");
             return new ExecuteCommandResult
             {
                 Success = false,
-                ErrorMessage = $"An error occurred while deploying firmware to the cloud: {ex.Message}"
+                ErrorMessage = "Meadow CLI is not installed or the check timed out."
             };
         }
+
+        if (!meadowCliInstalled)
+        {
+            
+        }
+
+        return new ExecuteCommandResult
+            {
+                Success = false,
+            };
+    }
+
+    private static Task<ExecuteCommandResult> UnexpectedError(ProjectResource resource)
+    {
+        return Task.FromResult(new ExecuteCommandResult
+        {
+            Success = false,
+            ErrorMessage = $"An unexpected error occurred while deploying '{resource.Name}' to cloud."
+        });
+    }
+
+    private static async Task<(RunExecutableResourceOutcome Outcome, ExecuteCommandResult? CommandResult, int? ExitCode)> RunExecutableResourceInteractivelyAsync(string title, string message, ExecutableResource resource, ResourceCommandService commandService, IInteractionService interactionService, ResourceNotificationService notificationService, TimeSpan timeout, CancellationToken cancellationToken)
+    {
+        var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+
+        try
+        {
+            var startResult = await commandService.ExecuteCommandAsync(
+                resource,
+                "resource-start",
+                cancellationToken
+            );
+
+            if (!startResult.Success)
+            {
+                return (RunExecutableResourceOutcome.ResourceStartFailed, startResult, null);
+            }
+
+            // TODO: We probably want to have some kind of timeout behavior here.
+            linkedCts.CancelAfter(timeout);
+
+            var pendingMessageBox = interactionService.PromptMessageBoxAsync(
+                title: title,
+                message: message,
+                new()
+                {
+                    PrimaryButtonText = "Cancel",
+                    Intent = MessageIntent.None
+                },
+                linkedCts.Token
+            );
+
+            var pendingResourceState = notificationService.WaitForResourceAsync(
+                resource.Name,
+                (@event) => @event.Snapshot.State == KnownResourceStates.Finished,
+                linkedCts.Token
+            );
+
+            var completedTask = await Task.WhenAny(pendingMessageBox, pendingResourceState);
+
+            if (completedTask == pendingMessageBox)
+            {
+                // User probably cancelled the operation.
+                var interactionResult = await pendingMessageBox;
+                if (interactionResult.Canceled)
+                {
+                    linkedCts.Cancel();
+                    return (RunExecutableResourceOutcome.CancelledByUser, null, null);
+                }
+                else
+                {
+                    throw new InvalidOperationException("Should this ever happen?");
+                }
+            }
+            else
+            {
+                linkedCts.Cancel();
+                var resourceState = await pendingResourceState;
+                return (RunExecutableResourceOutcome.ResourceFinished, null, resourceState.Snapshot.ExitCode);
+            }
+        }
+        catch (OperationCanceledException ex) when (ex.CancellationToken == cancellationToken)
+        {
+            return (RunExecutableResourceOutcome.CancelledByCaller, null, null);
+        }
+        catch (OperationCanceledException ex) when (ex.CancellationToken == linkedCts.Token)
+        {
+            return (RunExecutableResourceOutcome.ResourceTimedOut, null, null);
+        }
+    }
+
+    private enum RunExecutableResourceOutcome
+    {
+        ResourceStartFailed,
+        ResourceFinished,
+        ResourceTimedOut,
+        CancelledByUser,
+        CancelledByCaller
     }
 }
