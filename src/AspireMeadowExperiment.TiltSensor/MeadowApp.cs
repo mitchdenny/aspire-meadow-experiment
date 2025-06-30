@@ -13,7 +13,7 @@ public class MeadowApp : App<Desktop>
         Resolver.Log.Info($" Platform: {Device.Information.Platform}");
         Resolver.Log.Info($" OS: {Device.Information.OSVersion}");
         Resolver.Log.Info($" Model: {Device.Information.Model}");
-        Resolver.Log.Info($" Processor: {Device.Information.ProcessorType}");
+        Resolver.Log.Info($"   Processor: {Device.Information.ProcessorType}");
 
         Device.Display?.Resize(320, 240, 2);
         var displayController = new DisplayController(Device.Display!);

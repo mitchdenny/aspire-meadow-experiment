@@ -398,3 +398,10 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+src/AspireMeadowExperiment.TiltSensor/mpak/Test100.mpak
+src/AspireMeadowExperiment.TiltSensor/postlink_bin/app.config.yaml
+src/AspireMeadowExperiment.TiltSensor/postlink_bin/AspireMeadowExperiment.TiltSensor.csproj
+src/AspireMeadowExperiment.TiltSensor/postlink_bin/DisplayController.cs
+src/AspireMeadowExperiment.TiltSensor/postlink_bin/MeadowApp.cs
+src/AspireMeadowExperiment.TiltSensor/postlink_bin/Program.cs
+src/AspireMeadowExperiment.TiltSensor/postlink_bin/.vscode/launch.json
